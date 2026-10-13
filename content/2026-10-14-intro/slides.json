@@ -24,7 +24,9 @@
     "IDB",
     "Pakistan"
    ],
-   "sub": "Institute of Digital Business Pakistan, Chichawatni. Building e-commerce skills since 2018."
+   "sub": "Institute of Digital Business Pakistan, Chichawatni. Building e-commerce skills since 2018.",
+   "logo_card": true,
+   "text_y": 330
   },
   {
    "kicker": "What I do",
