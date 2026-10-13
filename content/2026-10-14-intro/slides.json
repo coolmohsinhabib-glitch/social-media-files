@@ -1,0 +1,12 @@
+{
+  "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan",
+            "phone": "+92 319 3498717", "series": "MEET MOHSIN"},
+  "slides": [
+    {"kicker": "Assalam o Alaikum", "text": "Hi, I'm\nMohsin Habib", "accent": ["Mohsin", "Habib"]},
+    {"kicker": "Who I am", "text": "CFO & Co-Founder of IDB Pakistan", "accent": ["IDB", "Pakistan"], "sub": "Institute of Digital Business Pakistan, Chichawatni. Building e-commerce skills since 2018."},
+    {"kicker": "What I do", "text": "eBay seller & trainer for 8 years", "accent": ["8", "years"], "sub": "Everything I teach comes from my own store."},
+    {"kicker": "Right now", "text": "eBay Boot Camp: Batch 14 is running", "accent": ["Batch", "14"]},
+    {"kicker": "On this page", "text": "Product hunting. Real numbers. Student wins.", "accent": ["Real", "numbers."]},
+    {"kicker": "Let's connect", "text": "Follow for daily\neBay tips", "accent": ["daily"]}
+  ]
+}

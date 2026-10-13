@@ -1,0 +1,18 @@
+{
+  "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan",
+            "phone": "+92 319 3498717", "series": "eBay TIP #01"},
+  "scenes": [
+    {"type": "hook", "seconds": 3.5, "text": "Sale $55 ki hui...\nlekin aap ke haath kitna aaya?", "accent": ["$55", "kitna", "aaya?"]},
+    {"type": "steps", "seconds": 8, "title": "eBay Payout Formula",
+     "lines": [["Sold Amount", "List Price + GST"],
+               ["Total Fees", "Category + Per Order + Intl + Promoted"],
+               ["eBay Payout", "Sold Amount − Total Fees − GST"],
+               ["Profit / Loss", "eBay Payout − Product Cost"]], "highlight": 4},
+    {"type": "steps", "seconds": 8, "title": "Example", "note": "Example numbers, for practice only",
+     "lines": [["Sold Amount", "$50 + $5 GST = $55"],
+               ["Total Fees", "$9"],
+               ["eBay Payout", "$55 − $9 − $5 = $41"],
+               ["Profit", "$41 − $30 cost = $11"]], "highlight": 4},
+    {"type": "cta", "seconds": 4.5, "text": "Pehle hisaab,\nphir listing.\nFollow for daily\neBay tips"}
+  ]
+}
