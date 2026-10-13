@@ -60,10 +60,10 @@ def blob(color, r, alpha):
     ImageDraw.Draw(s).ellipse([r, r, r * 3, r * 3], fill=color + (alpha,))
     return s.filter(ImageFilter.GaussianBlur(r * 0.45))
 
-_LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "idb-icon.png")
+_LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "idb-logo-badge.png")
 LOGO = None
 if os.path.exists(_LOGO_PATH):
-    _l = Image.open(_LOGO_PATH).convert("RGBA"); LOGO = _l.resize((int(_l.width * 96 / _l.height), 96))
+    _l = Image.open(_LOGO_PATH).convert("RGBA"); LOGO = _l.resize((int(_l.width * 104 / _l.height), 104), Image.LANCZOS)
 
 BASE = make_base()
 BLOBS = [(blob(ORANGE, 230, 120), 860, 260, 0.0), (blob((70, 110, 255), 260, 110), 120, 1180, 1.7),
@@ -91,7 +91,7 @@ def header(d, brand, gt):
     d.rounded_rectangle([80, 150 - 6 * (k - 1) * 10, 80 + tw + pad * 2, 212 + 6 * (k - 1) * 10], 32, fill=ORANGE)
     d.text((80 + pad, 157), label, font=f, fill=WHITE)
     lw = LOGO.width if LOGO else 0
-    d.text((W - 80 - lw - (30 if LOGO else 0), 166), "IDB PAKISTAN", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
+    if not LOGO: d.text((W - 80, 166), "IDB PAKISTAN", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
 
 def footer(d, brand):
     d.line([80, H - 270, W - 80, H - 270], fill=CARD_EDGE, width=2)
