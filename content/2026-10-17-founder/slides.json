@@ -1,0 +1,9 @@
+{
+  "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan", "series": "OUR STORY"},
+  "slides": [
+    {"kicker": "Why Chichawatni?", "text": "Small cities deserve opportunities too.",
+     "accent": ["deserve", "opportunities"],
+     "sub": "Big cities already have plenty. So we started at home, for our own community.",
+     "bg_photo": "(private photo)", "focus": 0.3, "text_y": 690, "fade_start": 0.18}
+  ]
+}
