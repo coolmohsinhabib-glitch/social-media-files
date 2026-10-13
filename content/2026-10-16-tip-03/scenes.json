@@ -1,0 +1,18 @@
+{
+  "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan",
+            "phone": "+92 319 3498717", "series": "eBay TIP #03"},
+  "intro_clip": {"path": "(private: hallway walk clip)", "start": 2.4, "seconds": 3.2},
+  "scenes": [
+    {"type": "hook", "seconds": 3.5, "text": "Product khud mat dhoondo.\nWinning stores se seekho", "accent": ["Winning", "stores"]},
+    {"type": "steps", "seconds": 9, "title": "eBay Store Hunting",
+     "note": "Woh store chuno jis mein:",
+     "lines": [["Recent Sales", "Pichle dinon mein sales"],
+               ["Product Ideas", "Ek se zyada ideas"],
+               ["Price Range", "Clear aur stable"]], "highlight": 1},
+    {"type": "steps", "seconds": 9, "title": "Aur yeh bhi",
+     "lines": [["Competition", "Manageable ho"],
+               ["Fulfillment Fit", "Aap ke model se match"],
+               ["Low Risk", "Risk kam ho"]], "highlight": 3},
+    {"type": "cta", "seconds": 4.5, "text": "Save karo aur aaj\nek store check karo!"}
+  ]
+}
