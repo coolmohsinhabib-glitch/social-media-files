@@ -256,6 +256,22 @@ def make_music(seconds, path, sr=44100):
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr); w.writeframes(data.tobytes())
 
 # ---------- main ----------
+def intro_overlay(brand, path):
+    """Transparent lower-third shown over the opening clip: series badge + name + title."""
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
+    for y in range(H - 620, H):
+        a = int(220 * min(1.0, (y - (H - 620)) / 400))
+        d.line([(0, y), (W, y)], fill=NAVY + (a,))
+    f = font("SemiBold", 40); label = brand.get("series", "")
+    if label:
+        tw = d.textlength(label, font=f)
+        d.rounded_rectangle([80, H - 470, 80 + tw + 60, H - 396], 37, fill=ORANGE + (255,))
+        d.text((110, H - 462), label, font=f, fill=WHITE)
+    d.text((80, H - 370), brand["name"], font=font("Bold", 84), fill=WHITE)
+    d.text((80, H - 262), brand["title"], font=font("Regular", 40), fill=MUTED)
+    if LOGO: img.paste(LOGO, (W - 80 - LOGO.width, 133), LOGO)
+    img.save(path)
+
 def main(src, out, music=True):
     spec = json.load(open(src, encoding="utf-8"))
     brand, scenes = spec["brand"], spec["scenes"]
@@ -263,10 +279,9 @@ def main(src, out, music=True):
     total = len(frames)
     tmpdir = tempfile.mkdtemp()
     silent = os.path.join(tmpdir, "video.mp4")
+    enc = ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "19", "-r", str(FPS)]
     p = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
-        "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p",
-        "-preset", "medium", "-crf", "19", "-movflags", "+faststart", silent if music else out],
-        stdin=subprocess.PIPE)
+        "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-"] + enc + [silent], stdin=subprocess.PIPE)
     for i, (si, s, t, dur) in enumerate(frames):
         gt = i / FPS
         img = background(gt); d = ImageDraw.Draw(img)
@@ -278,12 +293,27 @@ def main(src, out, music=True):
         if si > 0: wipe(d, t)
         p.stdin.write(img.tobytes())
     p.stdin.close(); p.wait()
+    length = total / FPS
+    clip = spec.get("intro_clip")
+    if clip and os.path.exists(clip["path"]):
+        ov = os.path.join(tmpdir, "overlay.png"); intro_overlay(brand, ov)
+        cs, cd = float(clip.get("start", 0)), float(clip.get("seconds", 3))
+        intro = os.path.join(tmpdir, "intro.mp4")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(cs), "-t", str(cd), "-i", clip["path"], "-i", ov,
+            "-filter_complex", f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},setsar=1[v];"
+            f"[v][1:v]overlay=0:0,fade=t=out:st={cd - 0.25}:d=0.25[o]", "-map", "[o]", "-an"] + enc + [intro], check=True)
+        both = os.path.join(tmpdir, "both.mp4")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", intro, "-i", silent, "-filter_complex",
+            "[0:v][1:v]concat=n=2:v=1:a=0[o]", "-map", "[o]"] + enc + [both], check=True)
+        silent = both; length += cd
     if music:
         wav = os.path.join(tmpdir, "music.wav")
-        make_music(total / FPS, wav)
+        make_music(length, wav)
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-i", wav, "-c:v", "copy",
                         "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], check=True)
-    print(f"Rendered {out}: {total / FPS:.1f}s, music={'on' if music else 'off'}")
+    else:
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-c", "copy", "-movflags", "+faststart", out], check=True)
+    print(f"Rendered {out}: {length:.1f}s, music={'on' if music else 'off'}")
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2], music="--no-music" not in sys.argv)
