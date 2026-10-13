@@ -78,12 +78,31 @@ def circle_photo(path, size):
     m = Image.new("L", (size, size), 0); ImageDraw.Draw(m).ellipse([0, 0, size, size], fill=255)
     return im, m
 
+def photo_bg(path, focus=0.3, fade_start=0.38):
+    """Full-bleed photo, cover-cropped (focus = vertical crop anchor 0..1), navy fade at the bottom."""
+    im = Image.open(path).convert("RGB")
+    k = max(W / im.width, H / im.height); im = im.resize((int(im.width * k + 1), int(im.height * k + 1)))
+    x = (im.width - W) // 2; y = int((im.height - H) * focus)
+    im = im.crop((x, y, x + W, y + H))
+    fade = Image.new("L", (1, H))
+    for yy in range(H):
+        t = max(0.0, (yy - H * fade_start) / (H * 0.40)); fade.putpixel((0, yy), int(255 * min(1.0, t) ** 1.2 * 0.94))
+    top = Image.new("L", (1, H))
+    for yy in range(H):
+        top.putpixel((0, yy), int(190 * max(0.0, 1 - yy / 280)))
+    navy = Image.new("RGB", (W, H), NAVY)
+    im = Image.composite(navy, im, fade.resize((W, H)))
+    im = Image.composite(navy, im, top.resize((W, H)))
+    return im
+
 def render(spec, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     brand, slides = spec["brand"], spec["slides"]; n = len(slides); paths = []
     for i, s in enumerate(slides):
-        img = base(i); d = ImageDraw.Draw(img); chrome(d, brand, i, n)
-        y0 = 470
+        bgp = s.get("bg_photo")
+        img = photo_bg(bgp, s.get("focus", 0.3), s.get("fade_start", 0.38)) if bgp and os.path.exists(bgp) else base(i)
+        d = ImageDraw.Draw(img); chrome(d, brand, i, n)
+        y0 = s.get("text_y", 470)
         if i == 0 and spec.get("photo") and os.path.exists(spec["photo"]):
             ph, m = circle_photo(spec["photo"], 300)
             d.ellipse([74, 214, 386, 526], fill=ORANGE); img.paste(ph, (80, 220), m); y0 = 600
