@@ -91,7 +91,7 @@ def header(d, brand, gt):
     d.rounded_rectangle([80, 150 - 6 * (k - 1) * 10, 80 + tw + pad * 2, 212 + 6 * (k - 1) * 10], 32, fill=ORANGE)
     d.text((80 + pad, 157), label, font=f, fill=WHITE)
     lw = LOGO.width if LOGO else 0
-    d.text((W - 80 - lw - (18 if LOGO else 0), 166), "IDB PAKISTAN", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
+    d.text((W - 80 - lw - (30 if LOGO else 0), 166), "IDB PAKISTAN", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
 
 def footer(d, brand):
     d.line([80, H - 270, W - 80, H - 270], fill=CARD_EDGE, width=2)
@@ -269,7 +269,10 @@ def intro_overlay(brand, path):
         d.text((110, H - 462), label, font=f, fill=WHITE)
     d.text((80, H - 370), brand["name"], font=font("Bold", 84), fill=WHITE)
     d.text((80, H - 262), brand["title"], font=font("Regular", 40), fill=MUTED)
-    if LOGO: img.paste(LOGO, (W - 80 - LOGO.width, 133), LOGO)
+    if LOGO:
+        x0 = W - 80 - LOGO.width
+        d.rounded_rectangle([x0 - 10, 123, x0 + LOGO.width + 10, 133 + LOGO.height + 10], 14, fill=WHITE + (255,))
+        img.paste(LOGO, (x0, 133), LOGO)
     img.save(path)
 
 def main(src, out, music=True):
@@ -289,7 +292,10 @@ def main(src, out, music=True):
         elif s["type"] == "steps": draw_steps(d, s, t, dur, gt)
         elif s["type"] == "cta": draw_cta(d, s, t, gt, brand)
         header(d, brand, gt); footer(d, brand); progress(d, i, total)
-        if LOGO: img.paste(LOGO, (W - 80 - LOGO.width, 133), LOGO)
+        if LOGO:
+            x0 = W - 80 - LOGO.width
+            d.rounded_rectangle([x0 - 10, 123, x0 + LOGO.width + 10, 133 + LOGO.height + 10], 14, fill=WHITE)
+            img.paste(LOGO, (x0, 133), LOGO)
         if si > 0: wipe(d, t)
         p.stdin.write(img.tobytes())
     p.stdin.close(); p.wait()

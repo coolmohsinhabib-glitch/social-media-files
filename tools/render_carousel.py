@@ -67,8 +67,8 @@ def chrome(d, brand, i, n):
         tw = d.textlength(label, font=f)
         d.rounded_rectangle([80, 90, 80 + tw + 52, 150], 30, fill=ORANGE)
         d.text((106, 97), label, font=f, fill=WHITE)
-    lw = LOGO.width + 20 if LOGO else 0
-    d.text((W - 80 - lw, 104), f"{i + 1}/{n}", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
+    lw = LOGO.width + 34 if LOGO else 0
+    if n > 1: d.text((W - 80 - lw, 104), f"{i + 1}/{n}", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
     d.line([80, H - 190, W - 80, H - 190], fill=EDGE, width=2)
     d.text((80, H - 160), brand["name"], font=font("Bold", 40), fill=WHITE)
     d.text((80, H - 108), brand["title"], font=font("Regular", 28), fill=MUTED)
@@ -108,7 +108,10 @@ def render(spec, out_dir):
         bgp = s.get("bg_photo")
         img = photo_bg(bgp, s.get("focus", 0.3), s.get("fade_start", 0.38)) if bgp and os.path.exists(bgp) else base(i)
         d = ImageDraw.Draw(img); chrome(d, brand, i, n)
-        if LOGO: img.paste(LOGO, (W - 80 - LOGO.width, 78), LOGO)
+        if LOGO:
+            pad = 10; x0 = W - 80 - LOGO.width
+            d.rounded_rectangle([x0 - pad, 78 - pad, x0 + LOGO.width + pad, 78 + LOGO.height + pad], 14, fill=WHITE)
+            img.paste(LOGO, (x0, 78), LOGO)
         y0 = s.get("text_y", 470)
         if i == 0 and spec.get("photo") and os.path.exists(spec["photo"]):
             ph, m = circle_photo(spec["photo"], 300)
