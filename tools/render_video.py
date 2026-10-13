@@ -60,6 +60,11 @@ def blob(color, r, alpha):
     ImageDraw.Draw(s).ellipse([r, r, r * 3, r * 3], fill=color + (alpha,))
     return s.filter(ImageFilter.GaussianBlur(r * 0.45))
 
+_LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "idb-icon.png")
+LOGO = None
+if os.path.exists(_LOGO_PATH):
+    _l = Image.open(_LOGO_PATH).convert("RGBA"); LOGO = _l.resize((int(_l.width * 96 / _l.height), 96))
+
 BASE = make_base()
 BLOBS = [(blob(ORANGE, 230, 120), 860, 260, 0.0), (blob((70, 110, 255), 260, 110), 120, 1180, 1.7),
          (blob(ORANGE, 170, 80), 900, 1500, 3.1)]
@@ -85,7 +90,8 @@ def header(d, brand, gt):
     pad = 26 * k
     d.rounded_rectangle([80, 150 - 6 * (k - 1) * 10, 80 + tw + pad * 2, 212 + 6 * (k - 1) * 10], 32, fill=ORANGE)
     d.text((80 + pad, 157), label, font=f, fill=WHITE)
-    d.text((W - 80, 166), "IDB PAKISTAN", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
+    lw = LOGO.width if LOGO else 0
+    d.text((W - 80 - lw - (18 if LOGO else 0), 166), "IDB PAKISTAN", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
 
 def footer(d, brand):
     d.line([80, H - 270, W - 80, H - 270], fill=CARD_EDGE, width=2)
@@ -268,6 +274,7 @@ def main(src, out, music=True):
         elif s["type"] == "steps": draw_steps(d, s, t, dur, gt)
         elif s["type"] == "cta": draw_cta(d, s, t, gt, brand)
         header(d, brand, gt); footer(d, brand); progress(d, i, total)
+        if LOGO: img.paste(LOGO, (W - 80 - LOGO.width, 133), LOGO)
         if si > 0: wipe(d, t)
         p.stdin.write(img.tobytes())
     p.stdin.close(); p.wait()

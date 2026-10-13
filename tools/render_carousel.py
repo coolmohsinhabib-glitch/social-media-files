@@ -29,6 +29,11 @@ def font(w, s):
         except OSError: pass
     return ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(s))
 
+_LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "idb-icon.png")
+LOGO = None
+if os.path.exists(_LOGO_PATH):
+    _l = Image.open(_LOGO_PATH).convert("RGBA"); LOGO = _l.resize((int(_l.width * 84 / _l.height), 84))
+
 def mix(a, b, k): return tuple(int(a[i] + (b[i] - a[i]) * k) for i in range(3))
 
 def base(i):
@@ -62,7 +67,8 @@ def chrome(d, brand, i, n):
         tw = d.textlength(label, font=f)
         d.rounded_rectangle([80, 90, 80 + tw + 52, 150], 30, fill=ORANGE)
         d.text((106, 97), label, font=f, fill=WHITE)
-    d.text((W - 80, 104), f"{i + 1}/{n}", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
+    lw = LOGO.width + 20 if LOGO else 0
+    d.text((W - 80 - lw, 104), f"{i + 1}/{n}", font=font("SemiBold", 30), fill=MUTED, anchor="ra")
     d.line([80, H - 190, W - 80, H - 190], fill=EDGE, width=2)
     d.text((80, H - 160), brand["name"], font=font("Bold", 40), fill=WHITE)
     d.text((80, H - 108), brand["title"], font=font("Regular", 28), fill=MUTED)
@@ -102,6 +108,7 @@ def render(spec, out_dir):
         bgp = s.get("bg_photo")
         img = photo_bg(bgp, s.get("focus", 0.3), s.get("fade_start", 0.38)) if bgp and os.path.exists(bgp) else base(i)
         d = ImageDraw.Draw(img); chrome(d, brand, i, n)
+        if LOGO: img.paste(LOGO, (W - 80 - LOGO.width, 78), LOGO)
         y0 = s.get("text_y", 470)
         if i == 0 and spec.get("photo") and os.path.exists(spec["photo"]):
             ph, m = circle_photo(spec["photo"], 300)
@@ -118,6 +125,13 @@ def render(spec, out_dir):
             sf = font("Regular", 42)
             sw, yend = words_layout(d, s["sub"], sf, W - 160, 80, yend + 24, 60)
             for w, x, y in sw: d.text((x, y), w, font=sf, fill=MUTED)
+        if s.get("logo_card"):
+            lp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "idb-logo-horizontal.jpg")
+            if os.path.exists(lp):
+                lg = Image.open(lp).convert("RGB"); lw = 560; lg = lg.resize((lw, int(lg.height * lw / lg.width)))
+                y = yend + 50; pad = 20
+                d.rounded_rectangle([80, y, 80 + lw + 2 * pad, y + lg.height + 2 * pad], 28, fill=WHITE)
+                img.paste(lg, (80 + pad, y + pad))
         if last and brand.get("phone"):
             pf = font("Bold", 56); tw = d.textlength(brand["phone"], font=pf); y = yend + 50
             d.rounded_rectangle([80, y, 80 + tw + 90, y + 100], 50, fill=ORANGE)
