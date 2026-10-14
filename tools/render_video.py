@@ -14,7 +14,7 @@ Scene JSON:
     {"type": "cta", "seconds": 4, "text": "Follow for daily eBay tips"}
   ]
 }
-Music is generated here (original, royalty-free). Pick a style per video with "music": pop | drive | bright | chill | hype | desi (music.py).
+Music is generated here (original, royalty-free). Pick a style per video with "music": pop | drive | bright | chill | hype | desi (music.py) or suspense | inspiring | motivational | rising (cinematic.py).
 Optional "intro_clip": {path, start, seconds, hook, accent} opens on real footage with the hook text from frame 1.
 """
 import json, math, os, random, subprocess, sys, tempfile, wave
@@ -203,6 +203,7 @@ def draw_cta(d, s, t, gt, brand):
 
 # ---------- original music: see music.py (v2 engine) ----------
 from music import make_music, STYLES as MUSIC_STYLES
+from cinematic import make_cinematic, MOODS as CINEMATIC_MOODS
 
 # ---------- main ----------
 def intro_overlay(brand, path, hook=None, accent=()):
@@ -287,7 +288,9 @@ def main(src, out, music=True):
         for s in scenes[:-1]:
             acc += s["seconds"]; cuts.append(acc)
         seed = spec.get("music_seed", sum(map(ord, brand.get("series", out))))
-        make_music(length, wav, style=spec.get("music", "pop"), cuts=cuts, seed=seed)
+        mstyle = spec.get("music", "pop")
+        if mstyle in CINEMATIC_MOODS: make_cinematic(length, wav, mstyle, cuts=cuts, seed=seed)
+        else: make_music(length, wav, style=mstyle, cuts=cuts, seed=seed)
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-i", wav, "-c:v", "copy",
                         "-af", "loudnorm=I=-14:TP=-1.5:LRA=9", "-ar", "44100",
                         "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], check=True)
