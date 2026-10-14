@@ -14,7 +14,7 @@ Scene JSON:
     {"type": "cta", "seconds": 4, "text": "Follow for daily eBay tips"}
   ]
 }
-Music is generated here (original, royalty-free). Pick a style per video with "music": pop | drive | bright | chill | hype.
+Music is generated here (original, royalty-free). Pick a style per video with "music": pop | drive | bright | chill | hype | desi (music.py).
 Optional "intro_clip": {path, start, seconds, hook, accent} opens on real footage with the hook text from frame 1.
 """
 import json, math, os, random, subprocess, sys, tempfile, wave
@@ -201,70 +201,8 @@ def draw_cta(d, s, t, gt, brand):
             phone_icon(d, 120, y + 60 + 30 * k, 60 * k, WHITE)
             d.text((80 + 120, (box[1] + box[3]) / 2), brand["phone"], font=pf, fill=WHITE, anchor="lm")
 
-# ---------- original music ----------
-MUSIC_STYLES = {
-    # name: (bpm, chord progression as MIDI triads, arpeggio pattern, seed)
-    "pop":    (120, [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], [0, 1, 2, 1], 7),    # Am F C G
-    "drive":  (128, [[50, 53, 57], [46, 50, 53], [48, 52, 55], [45, 49, 52]], [0, 2, 1, 2], 11),   # Dm Bb C A
-    "bright": (116, [[48, 52, 55], [55, 59, 62], [57, 60, 64], [53, 57, 60]], [0, 1, 2, 2], 3),    # C G Am F
-    "chill":  (96,  [[52, 55, 59], [48, 52, 55], [55, 59, 62], [50, 54, 57]], [0, 2, 1, 0], 21),   # Em C G D
-    "hype":   (140, [[45, 48, 52], [45, 48, 52], [53, 57, 60], [52, 55, 59]], [0, 0, 2, 1], 5),    # Am Am F Em
-}
-
-def make_music(seconds, path, sr=44100, style="pop"):
-    bpm, chords, arp, seed = MUSIC_STYLES.get(style, MUSIC_STYLES["pop"])
-    BEAT = 60 / bpm
-    n = int(seconds * sr); out = np.zeros(n); rng = np.random.default_rng(seed)
-    def place(sig, start):
-        i = int(start * sr)
-        if i >= n: return
-        j = min(n, i + len(sig)); out[i:j] += sig[: j - i]
-    note = lambda m: 440 * 2 ** ((m - 69) / 12)
-    bar = BEAT * 4
-    # kick
-    tk = np.arange(int(0.3 * sr)) / sr
-    kick = np.sin(2 * np.pi * (45 * tk + 110 / 25 * (1 - np.exp(-25 * tk)))) * np.exp(-tk * 11) * 0.9
-    # hat & clap
-    th = np.arange(int(0.06 * sr)) / sr
-    hat = np.diff(rng.standard_normal(len(th) + 1)) * np.exp(-th * 70) * 0.10
-    tc = np.arange(int(0.2 * sr)) / sr
-    clap = rng.standard_normal(len(tc)) * np.exp(-tc * 22) * 0.22
-    t = 0.0; b = 0
-    while t < seconds:
-        ch = chords[(b // 4) % 4]
-        if t >= bar:  # drums enter after the first bar
-            place(kick, t)
-            place(hat, t + BEAT / 2)
-            if b % 2 == 1: place(clap, t)
-        # bass on eighths
-        f0 = note(ch[0] - 24)
-        tb = np.arange(int(BEAT / 2 * sr)) / sr
-        bass = sum(np.sin(2 * np.pi * f0 * h * tb) / h for h in (1, 2, 3)) * np.exp(-tb * 6) * 0.22
-        place(bass, t); place(bass, t + BEAT / 2)
-        # plucked arpeggio on sixteenths
-        for k in range(4):
-            m = ch[arp[k]] + 12
-            tp = np.arange(int(0.22 * sr)) / sr
-            pl = (np.sin(2 * np.pi * note(m) * tp) + 0.3 * np.sin(4 * np.pi * note(m) * tp)) * np.exp(-tp * 18) * 0.11
-            place(pl, t + k * BEAT / 4)
-        t += BEAT; b += 1
-    # pad, ducked on the beat
-    tt = np.arange(n) / sr
-    pad = np.zeros(n)
-    for i, ch in enumerate(chords * int(seconds / bar / 4 + 2)):
-        s0 = int(i * bar * sr); s1 = min(n, int((i + 1) * bar * sr))
-        if s0 >= n: break
-        seg = tt[s0:s1]
-        pad[s0:s1] = sum(np.sin(2 * np.pi * note(m) * seg) + np.sin(2 * np.pi * note(m) * 1.004 * seg) for m in ch) * 0.025
-    duck = 1 - 0.6 * np.exp(-((tt % BEAT) / BEAT) * 6) * (tt >= bar)
-    out += pad * duck
-    fade = np.ones(n); fi = int(0.3 * sr); fo = int(1.5 * sr)
-    fade[:fi] = np.linspace(0, 1, fi); fade[-fo:] = np.linspace(1, 0, fo)
-    out = np.tanh(out * 1.4) * fade
-    out = out / (np.max(np.abs(out)) + 1e-9) * 0.85
-    data = (out * 32767).astype(np.int16)
-    with wave.open(path, "wb") as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr); w.writeframes(data.tobytes())
+# ---------- original music: see music.py (v2 engine) ----------
+from music import make_music, STYLES as MUSIC_STYLES
 
 # ---------- main ----------
 def intro_overlay(brand, path, hook=None, accent=()):
@@ -343,8 +281,15 @@ def main(src, out, music=True):
         silent = both; length += cd
     if music:
         wav = os.path.join(tmpdir, "music.wav")
-        make_music(length, wav, style=spec.get("music", "pop"))
+        # scene cuts (seconds) so the music builds into every cut and hits on it
+        offs = float(clip.get("seconds", 3)) if clip and os.path.exists(clip["path"]) else 0.0
+        cuts, acc = [offs] if offs else [], offs
+        for s in scenes[:-1]:
+            acc += s["seconds"]; cuts.append(acc)
+        seed = spec.get("music_seed", sum(map(ord, brand.get("series", out))))
+        make_music(length, wav, style=spec.get("music", "pop"), cuts=cuts, seed=seed)
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-i", wav, "-c:v", "copy",
+                        "-af", "loudnorm=I=-14:TP=-1.5:LRA=9", "-ar", "44100",
                         "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], check=True)
     else:
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-c", "copy", "-movflags", "+faststart", out], check=True)
