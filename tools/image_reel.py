@@ -1,7 +1,8 @@
 """Turn one or more 1080x1350 images (carousel slides / cards) into a 1080x1920 Reel with music.
 
 Usage: python3 image_reel.py out.mp4 --music classic|rising [--seconds-per 4] [--seed 7] img1.jpg [img2.jpg ...]
-Each image sits on a blurred, darkened copy of itself, with a slow zoom; slides cross-fade.
+Each image sits on a blurred, darkened copy of itself and gently zooms in and out (card 1.00-1.07,
+background breathing the opposite way with a tiny drift); slides cross-fade.
 Music: only Mohsin's approved tracks ("classic" = first-video music, "rising" = inspiring -> motivational),
 with the builds/hits lined up to the slide changes. Loudness normalised to -14 LUFS.
 """
@@ -38,11 +39,19 @@ def main():
     p = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
                           "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "19", silent],
                          stdin=subprocess.PIPE)
+    import math
+    PERIOD = 6.0                                 # seconds for one gentle zoom-in + zoom-out
     def frame(i, f):
-        k = f / (per * FPS)                      # 0..1 within this slide
-        z = 1.0 + 0.06 * k
+        t = f / FPS
+        ph = math.sin(math.pi * t / (PERIOD / 2) - math.pi / 2)   # -1 -> 1 -> -1, smooth
+        z = 1.035 + 0.035 * ph                   # card: 1.00 <-> 1.07
+        bz = 1.06 - 0.03 * ph                    # background breathes the opposite way
+        dx = int(12 * math.sin(2 * math.pi * t / (PERIOD * 1.7)))  # tiny sideways drift
+        bg = bgs[i].resize((int(W * bz), int(H * bz)), Image.BILINEAR)
+        l, tp = (bg.width - W) // 2 + dx, (bg.height - H) // 2
+        fr = bg.crop((l, tp, l + W, tp + H))
         im = imgs[i].resize((int(fw * z), int(fh * z)), Image.LANCZOS)
-        fr = bgs[i].copy(); fr.paste(im, ((W - im.width) // 2, (H - im.height) // 2))
+        fr.paste(im, ((W - im.width) // 2, (H - im.height) // 2))
         return fr
     for g in range(n):
         i = min(int(g / (per * FPS)), len(imgs) - 1); f = g - int(i * per * FPS)
