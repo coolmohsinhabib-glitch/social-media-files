@@ -114,8 +114,10 @@ MOODS = {
     "suspense":     dict(bpm=120, key=45, prog=[(0, "m"), (-4, "M"), (-7, "m"), (-5, "M")]),   # Am F Dm E
     "inspiring":    dict(bpm=100, key=48, prog=[(9, "m"), (5, "M"), (0, "M"), (7, "M")]),     # Am F C G (C major)
     "motivational": dict(bpm=110, key=50, prog=[(0, "m"), (-4, "M"), (3, "M"), (-2, "M")]),   # Dm Bb F C
+    "rising":       dict(bpm=104, key=48, prog=[(9, "m"), (5, "M"), (0, "M"), (7, "M")]),     # inspiring -> epic (C major)
 }
 THEMES = {  # (bar, beat, midi, beats) over the 4-chord loop
+    "rising": None,
     "inspiring": [(0, 0, 76, 1.5), (0, 1.5, 74, .5), (0, 2, 72, 1), (0, 3, 76, 1), (1, 0, 77, 1.5), (1, 1.5, 76, .5), (1, 2, 72, 2),
                   (2, 0, 79, 1.5), (2, 1.5, 76, .5), (2, 2, 72, 1), (2, 3, 74, 1), (3, 0, 74, 2), (3, 2, 71, 1), (3, 3, 74, 1)],
     "motivational": [(0, 0, 69, 2), (0, 2, 74, 1), (0, 3, 77, 1), (1, 0, 77, 2), (1, 2, 74, 2), (2, 0, 72, 1), (2, 1, 77, 1),
@@ -136,11 +138,13 @@ def make_cinematic(seconds, path, mood="inspiring", cuts=(), seed=None):
         if t >= end_t + 0.001 and bus not in ("fx",): return
         B[bus].add(sig, t, pan, g)
         if send: B["send"].add(sig, t, pan, g * send)
-    theme = THEMES[mood]
+    theme = THEMES[mood] or THEMES["inspiring"]
     # ---- frame-1 hit
     root0 = md["key"] + md["prog"][0][0]
-    if mood == "inspiring":
-        add("fx", kit.impact(), 0, 0, 0.45, 0.4)
+    if mood in ("inspiring", "rising"):
+        add("fx", kit.impact(), 0, 0, 0.45 if mood == "inspiring" else 0.7, 0.4)
+        if mood == "rising":
+            for p, pn in ((1.0, -0.2), (0.85, 0.2)): add("perc", taiko(rng, p), 0.0, pn, 0.6, 0.5)
         for m in vo(root0, md["prog"][0][1], 57, 69): add("keys", piano(m, bar, 0.95, rng), 0.0, 0, 0.6, 0.5)
     else:
         add("fx", kit.impact(), 0, 0, 0.8, 0.3)
@@ -195,6 +199,36 @@ def make_cinematic(seconds, path, mood="inspiring", cuts=(), seed=None):
                     if tt < end_t and not gap(tt): add("perc", kit.shaker, tt, -0.3, 0.5 if k % 2 else 0.3)
             if last:
                 add("str", strings([m + 12 for m in chord], dur, rng, 0.3, 1.0, 4200), t0, 0.1, 0.55, 0.5)
+        elif mood == "rising":
+            pat = [bass + 12, chord[2], chord[0] + 12, chord[1] + 12, chord[0] + 12, chord[2], chord[1] + 12, chord[2] + 12]
+            for k in range(8):                                                                                      # piano arpeggio, all the way
+                tt = t0 + k * beat / 2
+                if tt < end_t: add("keys", piano(pat[k], beat * 1.5, (0.75 if k % 2 == 0 else 0.55) * (0.85 if last else 1), rng), tt, (k % 3 - 1) * 0.2, 0.7, 0.35)
+            add("keys", piano(bass, bar, 0.7, rng), t0, 0, 0.7, 0.3)
+            add("str", strings(chord, dur, rng, 0.7 if s == 0 else 0.35, 1.0, 1800 if s == 0 else 3000), t0, 0, 0.55 if s == 0 else 0.8, 0.5)
+            if mid:
+                add("low", strings([bass, bass + 12], dur, rng, 0.15, 0.5, 1100), t0, 0, 0.8, 0.3)
+                for bt in (0, 2):
+                    tt = t0 + bt * beat
+                    if tt < end_t and not gap(tt): add("perc", taiko(rng, 1.0, 0.8), tt, 0, 0.75, 0.4)
+            if s >= 2 or last:                                                                                      # epic layer
+                for k in range(16):
+                    tt = t0 + k * beat / 4
+                    if tt >= end_t or gap(tt): continue
+                    nn = [chord[0], chord[0], chord[2], chord[0], chord[0] + 12, chord[0], chord[2], chord[1]][k % 8]
+                    add("str", stacc(nn - 12, rng, 0.16, 2600), tt, -0.2, 1.0 if k % 4 == 0 else 0.6, 0.2)
+                hits = ((1.5, 0.6, 1.2), (3, 0.6, 1.3), (3.5, 0.7, 1.2))
+                if last: hits += ((1, .7, 1.25), (2.5, .6, 1.3), (3.75, .55, 1.35))
+                for bt, g, p in hits:
+                    tt = t0 + bt * beat
+                    if tt < end_t and not gap(tt): add("perc", taiko(rng, p, 0.8), tt, (p - 1.15) * 2, g, 0.45)
+            if last:
+                add("lead", choir(chord, dur, rng), t0, 0, 0.6, 0.6)
+                add("low", braam(bass, min(bar, 2.0), rng), t0, 0, 0.45, 0.4)
+                add("str", strings([m + 12 for m in chord], dur, rng, 0.3, 1.0, 4200), t0, 0.1, 0.55, 0.5)
+                for k in (1, 3):
+                    tt = t0 + k * beat
+                    if tt < end_t and not gap(tt): add("perc", kit.clap, tt, 0, 0.6, 0.5)
         else:  # motivational
             for k in range(16):                                                                                     # 16th ostinato
                 tt = t0 + k * beat / 4
@@ -216,7 +250,7 @@ def make_cinematic(seconds, path, mood="inspiring", cuts=(), seed=None):
                     tt = t0 + k * beat
                     if tt < end_t and not gap(tt): add("perc", kit.clap, tt, 0, 0.6, 0.5)
         # theme
-        th_on = (mood == "suspense" and mid) or (mood == "inspiring" and (s >= 2 or (s >= 1 and nsec <= 2))) or (mood == "motivational" and (last or (s >= 2 and nsec > 3)))
+        th_on = (mood == "rising" and (s >= 2 or last)) or (mood == "suspense" and mid) or (mood == "inspiring" and (s >= 2 or (s >= 1 and nsec <= 2))) or (mood == "motivational" and (last or (s >= 2 and nsec > 3)))
         if th_on:
             for tb, bt, m, ln in theme:
                 if tb != b % 4: continue
@@ -224,6 +258,11 @@ def make_cinematic(seconds, path, mood="inspiring", cuts=(), seed=None):
                 if tt >= end_t: continue
                 if mood == "suspense":
                     add("lead", piano(m, ln * beat, 0.6, rng), tt, 0.25, 0.75, 0.9)
+                elif mood == "rising":
+                    add("lead", piano(m + 12, ln * beat, 0.85, rng), tt, 0.15, 0.55, 0.5)
+                    if last:
+                        add("lead", strings([m, m - 12], ln * beat, rng, 0.08, 0.6, 3800, 5), tt, 0.1, 1.0, 0.55)
+                        add("lead", braam(m - 24, ln * beat + 0.3, rng), tt, -0.1, 0.12, 0.3)
                 elif mood == "inspiring":
                     add("lead", piano(m + 12, ln * beat, 0.8, rng), tt, 0.15, 0.6, 0.5)
                     add("lead", piano(m, ln * beat, 0.7, rng), tt, -0.15, 0.4, 0.4)
@@ -238,16 +277,16 @@ def make_cinematic(seconds, path, mood="inspiring", cuts=(), seed=None):
         add("fx", reverse_swell(vo(md["key"] + off, q, 60, 72), sw, rng), c - sw, 0, 0.9)
         rc = kit.crash[:, ::-1][:, -int(sw * SR):] if sw < kit.crash.shape[1] / SR else kit.crash[:, ::-1]
         add("fx", rc, c - rc.shape[1] / SR, 0, 0.5)
-        if mood != "inspiring":
+        if mood != "inspiring" and not (mood == "rising" and c == cuts[0]):
             add("fx", kit.riser(sw), c - sw, 0, 0.4)
             for p, pn in ((1.0, -0.3), (0.9, 0.3)): add("perc", taiko(rng, p), c, pn, 0.8, 0.5)
             add("fx", kit.impact(), c, 0, 0.45, 0.3)
-            if mood == "motivational":
+            if mood in ("motivational", "rising"):
                 for k in range(4): add("perc", taiko(rng, 1.4, 0.5), c - beat + k * beat / 4, 0.2 * (k - 1.5), 0.35 + 0.12 * k)
         else:
             add("perc", kit.kick, c, 0, 0.9); add("fx", kit.crash, c, 0, 0.6, 0.4)
     # ---- ending
-    if mood == "inspiring": fin = vo(md["key"], "M", 55, 66)
+    if mood in ("inspiring", "rising"): fin = vo(md["key"], "M", 55, 66)
     elif mood == "motivational": fin = vo(md["key"], "M", 55, 66)        # D major: lift at the end
     else: fin = vo(md["key"], "m", 55, 66)
     froot = vo(fin[0], "M", 33, 44)[0]
@@ -268,7 +307,8 @@ def make_cinematic(seconds, path, mood="inspiring", cuts=(), seed=None):
         return x * 10 ** (db / 20) / (np.sqrt((x[:, a] ** 2).mean()) + 1e-9)
     tg = {"suspense": dict(perc=-15, low=-16, keys=-20, str=-17, lead=-17),
           "inspiring": dict(perc=-19, low=-19, keys=-14, str=-18, lead=-15.5),
-          "motivational": dict(perc=-13.5, low=-17, keys=-20, str=-15, lead=-16)}[mood]
+          "motivational": dict(perc=-13.5, low=-17, keys=-20, str=-15, lead=-16),
+          "rising": dict(perc=-15, low=-17.5, keys=-16, str=-16, lead=-15.5)}[mood]
     mix = sum(level(B[k].x, v) for k, v in tg.items()) + B["fx"].x * 0.6
     mix += hall(B["send"].x, 3.0 if mood != "motivational" else 2.6) * (0.45 if mood == "inspiring" else 0.38)
     mix = hp(mix, 30)
