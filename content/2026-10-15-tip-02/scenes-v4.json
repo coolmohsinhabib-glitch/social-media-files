@@ -1,0 +1,83 @@
+{
+ "brand": {
+  "name": "Mohsin Habib",
+  "title": "CFO & Co-Founder, IDB Pakistan",
+  "phone": "+92 319 3498717",
+  "series": "eBay TIP #02"
+ },
+ "scenes": [
+  {
+   "type": "steps",
+   "seconds": 7,
+   "title": "Dropshipping",
+   "lines": [
+    [
+     "Source",
+     "Product ek website se"
+    ],
+    [
+     "Stock",
+     "Aap ke paas nahi hota"
+    ],
+    [
+     "Shipping",
+     "Website seedha buyer ko"
+    ]
+   ],
+   "highlight": 1
+  },
+  {
+   "type": "steps",
+   "seconds": 7,
+   "title": "FBM",
+   "note": "Fulfilled by Merchant",
+   "lines": [
+    [
+     "Stock",
+     "Aap ke paas hota hai"
+    ],
+    [
+     "Shipping",
+     "Aap khud karte hain"
+    ],
+    [
+     "Control",
+     "Packing aur delivery aap ki"
+    ]
+   ],
+   "highlight": 2
+  },
+  {
+   "type": "steps",
+   "seconds": 7,
+   "title": "Kaun sa behtar?",
+   "lines": [
+    [
+     "Rule",
+     "Dono ka hisaab alag hai"
+    ],
+    [
+     "Check",
+     "eBay Payout − Product Cost"
+    ]
+   ],
+   "highlight": 2
+  },
+  {
+   "type": "cta",
+   "seconds": 3.5,
+   "text": "Kaun sa model use\nkar rahe ho?\nComment karo!"
+  }
+ ],
+ "intro_clip": {
+  "path": "(private: hallway walk clip)",
+  "start": 5.2,
+  "seconds": 2.6,
+  "hook": "Dropshipping ya FBM?\nPehle yeh samjho",
+  "accent": [
+   "Dropshipping",
+   "FBM?"
+  ]
+ },
+ "music": "drive"
+}

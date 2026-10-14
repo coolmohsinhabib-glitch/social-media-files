@@ -14,7 +14,8 @@ Scene JSON:
     {"type": "cta", "seconds": 4, "text": "Follow for daily eBay tips"}
   ]
 }
-Music is generated here (original, royalty-free): 120 BPM, motion pulses on the beat.
+Music is generated here (original, royalty-free). Pick a style per video with "music": pop | drive | bright | chill | hype.
+Optional "intro_clip": {path, start, seconds, hook, accent} opens on real footage with the hook text from frame 1.
 """
 import json, math, os, random, subprocess, sys, tempfile, wave
 from functools import lru_cache
@@ -201,14 +202,24 @@ def draw_cta(d, s, t, gt, brand):
             d.text((80 + 120, (box[1] + box[3]) / 2), brand["phone"], font=pf, fill=WHITE, anchor="lm")
 
 # ---------- original music ----------
-def make_music(seconds, path, sr=44100):
-    n = int(seconds * sr); out = np.zeros(n); rng = np.random.default_rng(7)
+MUSIC_STYLES = {
+    # name: (bpm, chord progression as MIDI triads, arpeggio pattern, seed)
+    "pop":    (120, [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], [0, 1, 2, 1], 7),    # Am F C G
+    "drive":  (128, [[50, 53, 57], [46, 50, 53], [48, 52, 55], [45, 49, 52]], [0, 2, 1, 2], 11),   # Dm Bb C A
+    "bright": (116, [[48, 52, 55], [55, 59, 62], [57, 60, 64], [53, 57, 60]], [0, 1, 2, 2], 3),    # C G Am F
+    "chill":  (96,  [[52, 55, 59], [48, 52, 55], [55, 59, 62], [50, 54, 57]], [0, 2, 1, 0], 21),   # Em C G D
+    "hype":   (140, [[45, 48, 52], [45, 48, 52], [53, 57, 60], [52, 55, 59]], [0, 0, 2, 1], 5),    # Am Am F Em
+}
+
+def make_music(seconds, path, sr=44100, style="pop"):
+    bpm, chords, arp, seed = MUSIC_STYLES.get(style, MUSIC_STYLES["pop"])
+    BEAT = 60 / bpm
+    n = int(seconds * sr); out = np.zeros(n); rng = np.random.default_rng(seed)
     def place(sig, start):
         i = int(start * sr)
         if i >= n: return
         j = min(n, i + len(sig)); out[i:j] += sig[: j - i]
     note = lambda m: 440 * 2 ** ((m - 69) / 12)
-    chords = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]]  # Am F C G
     bar = BEAT * 4
     # kick
     tk = np.arange(int(0.3 * sr)) / sr
@@ -232,7 +243,7 @@ def make_music(seconds, path, sr=44100):
         place(bass, t); place(bass, t + BEAT / 2)
         # plucked arpeggio on sixteenths
         for k in range(4):
-            m = ch[[0, 1, 2, 1][k]] + 12
+            m = ch[arp[k]] + 12
             tp = np.arange(int(0.22 * sr)) / sr
             pl = (np.sin(2 * np.pi * note(m) * tp) + 0.3 * np.sin(4 * np.pi * note(m) * tp)) * np.exp(-tp * 18) * 0.11
             place(pl, t + k * BEAT / 4)
@@ -256,9 +267,27 @@ def make_music(seconds, path, sr=44100):
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr); w.writeframes(data.tobytes())
 
 # ---------- main ----------
-def intro_overlay(brand, path):
-    """Transparent lower-third shown over the opening clip: series badge + name + title."""
+def intro_overlay(brand, path, hook=None, accent=()):
+    """Transparent overlay for the opening clip: optional big hook text at the top (shown from the
+    very first frame, to stop the scroll), plus a lower-third with series badge + name + title."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
+    if hook:
+        for y in range(0, 760):
+            a = int(200 * max(0.0, 1 - y / 760))
+            d.line([(0, y), (W, y)], fill=NAVY + (a,))
+        hf = font("Bold", 88); acc = {a.lower() for a in accent}
+        y = 300; maxw = W - 160
+        for line in hook.split("\n"):
+            x = 80
+            for w in line.split():
+                ww = d.textlength(w, font=hf)
+                if x > 80 and x + ww > 80 + maxw:
+                    x = 80; y += 108
+                col = ORANGE2 if w.lower().strip(".,:!?") in acc else WHITE
+                d.text((x + 4, y + 4), w, font=hf, fill=(0, 0, 0, 150))
+                d.text((x, y), w, font=hf, fill=col + (255,))
+                x += ww + d.textlength(" ", font=hf)
+            y += 108
     for y in range(H - 620, H):
         a = int(220 * min(1.0, (y - (H - 620)) / 400))
         d.line([(0, y), (W, y)], fill=NAVY + (a,))
@@ -302,7 +331,7 @@ def main(src, out, music=True):
     length = total / FPS
     clip = spec.get("intro_clip")
     if clip and os.path.exists(clip["path"]):
-        ov = os.path.join(tmpdir, "overlay.png"); intro_overlay(brand, ov)
+        ov = os.path.join(tmpdir, "overlay.png"); intro_overlay(brand, ov, clip.get("hook"), clip.get("accent", []))
         cs, cd = float(clip.get("start", 0)), float(clip.get("seconds", 3))
         intro = os.path.join(tmpdir, "intro.mp4")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(cs), "-t", str(cd), "-i", clip["path"], "-i", ov,
@@ -314,7 +343,7 @@ def main(src, out, music=True):
         silent = both; length += cd
     if music:
         wav = os.path.join(tmpdir, "music.wav")
-        make_music(length, wav)
+        make_music(length, wav, style=spec.get("music", "pop"))
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-i", wav, "-c:v", "copy",
                         "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], check=True)
     else:
