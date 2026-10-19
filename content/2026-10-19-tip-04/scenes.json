@@ -1,0 +1,12 @@
+{
+  "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan", "phone": "+92 319 3498717", "series": "eBay TIP #04"},
+  "music": "classic",
+  "intro_clip": {"path": "(private: IMG_2448 navy waistcoat photo, slow zoom)", "start": 0, "seconds": 3.2, "hook": "Listings hain,\nphir bhi sale nahi?", "accent": ["sale", "nahi?"]},
+  "scenes": [
+    {"type": "steps", "seconds": 8.5, "title": "3 cheezein check karo",
+     "lines": [["Price", "Sold Items mein asal price dekho"],
+               ["Title", "Buyer ke search words daalo"],
+               ["Photos", "Saaf, clear, pehli photo best"]], "highlight": 1},
+    {"type": "cta", "seconds": 4, "text": "Aap ki listing mein\nkya missing hai?"}
+  ]
+}
