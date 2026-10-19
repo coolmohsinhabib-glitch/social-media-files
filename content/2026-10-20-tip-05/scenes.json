@@ -1,7 +1,7 @@
 {
   "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan", "phone": "+92 319 3498717", "series": "eBay TIP #05"},
   "music": "rising", "music_seed": 205,
-  "intro_clip": {"path": "(private: IMG_3731 black shirt photo, slow zoom)", "start": 0, "seconds": 3.2, "hook": "Bina tool ke product\nkaise dhoondein?", "accent": ["Bina", "tool"]},
+  "intro_clip": {"path": "(private: IMG_6659 light-blue polo smiling selfie, slow zoom)", "start": 0, "seconds": 3.2, "hook": "Bina tool ke product\nkaise dhoondein?", "accent": ["Bina", "tool"]},
   "scenes": [
     {"type": "steps", "seconds": 9, "title": "Manual Product Hunting",
      "lines": [["Search", "Apni category ka product"],
