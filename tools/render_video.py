@@ -16,7 +16,7 @@ Scene JSON:
 }
 Music is generated here (original, royalty-free). Pick a style per video with "music": pop | drive | bright | chill | hype | desi (music.py) or suspense | inspiring | motivational | rising (cinematic.py) or classic (music_classic.py).
 APPROVED by Mohsin for his videos: "classic" (first video) and "rising". Use only these unless he approves more.
-Optional "intro_clip": {path, start, seconds, hook, accent} opens on real footage with the hook text from frame 1.
+Optional "intro_clip": {path, start, seconds, hook, accent, keywords} opens on real footage with the hook text from frame 1.
 """
 import json, math, os, random, subprocess, sys, tempfile, wave
 from functools import lru_cache
@@ -208,7 +208,7 @@ from cinematic import make_cinematic, MOODS as CINEMATIC_MOODS
 from music_classic import make_classic
 
 # ---------- main ----------
-def intro_overlay(brand, path, hook=None, accent=()):
+def intro_overlay(brand, path, hook=None, accent=(), keywords=None):
     """Transparent overlay for the opening clip: optional big hook text at the top (shown from the
     very first frame, to stop the scroll), plus a lower-third with series badge + name + title."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
@@ -239,6 +239,8 @@ def intro_overlay(brand, path, hook=None, accent=()):
         d.text((110, H - 462), label, font=f, fill=WHITE)
     d.text((80, H - 370), brand["name"], font=font("Bold", 84), fill=WHITE)
     d.text((80, H - 262), brand["title"], font=font("Regular", 40), fill=MUTED)
+    if keywords:  # small, low-contrast search keywords (platforms read on-screen text)
+        d.text((80, H - 190), keywords, font=font("Regular", 26), fill=WHITE + (70,))
     if LOGO:
         x0 = W - 80 - LOGO.width
         d.rounded_rectangle([x0 - 10, 123, x0 + LOGO.width + 10, 133 + LOGO.height + 10], 14, fill=WHITE + (255,))
@@ -272,7 +274,7 @@ def main(src, out, music=True):
     length = total / FPS
     clip = spec.get("intro_clip")
     if clip and os.path.exists(clip["path"]):
-        ov = os.path.join(tmpdir, "overlay.png"); intro_overlay(brand, ov, clip.get("hook"), clip.get("accent", []))
+        ov = os.path.join(tmpdir, "overlay.png"); intro_overlay(brand, ov, clip.get("hook"), clip.get("accent", []), clip.get("keywords"))
         cs, cd = float(clip.get("start", 0)), float(clip.get("seconds", 3))
         intro = os.path.join(tmpdir, "intro.mp4")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(cs), "-t", str(cd), "-i", clip["path"], "-i", ov,
