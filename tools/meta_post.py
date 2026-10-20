@@ -14,6 +14,10 @@ Commands (all print JSON results):
   fb-reel            --video URL --caption TEXT [--at "YYYY-MM-DDTHH:MM" PKT]  -> Page Reel, now or scheduled
   fb-video           --video URL --caption TEXT [--at "YYYY-MM-DDTHH:MM" PKT]  -> Page video via graph.facebook.com (works from the workspace; fb-reel needs rupload.facebook.com)
   fb-story           --video URL | --image URL      -> Page Story
+  ig-carousel        --images URL1,URL2,... --caption TEXT [--collab u1,u2]
+                     -> creates a CAROUSEL container (2-10 images), waits for FINISHED; publish later with ig-publish
+  fb-photos          --images URL1,URL2,... --caption TEXT [--at "YYYY-MM-DDTHH:MM" PKT]
+                     -> multi-photo Page post (carousel-style), now or scheduled
 """
 import argparse, json, re, sys, time, urllib.parse, urllib.request, urllib.error
 from datetime import datetime, timezone, timedelta
@@ -71,7 +75,7 @@ def main():
     ap.add_argument("--tokens", required=True)
     ap.add_argument("--video"); ap.add_argument("--image"); ap.add_argument("--caption", default="")
     ap.add_argument("--collab", default=""); ap.add_argument("--cover-ms", type=int)
-    ap.add_argument("--id"); ap.add_argument("--at")
+    ap.add_argument("--id"); ap.add_argument("--at"); ap.add_argument("--images", default="")
     a = ap.parse_args()
     tok = load_token(a.tokens)
     out = {}
@@ -144,6 +148,38 @@ def main():
             out = {"photo": ph}
             if "id" in ph:
                 out["story"] = call("POST", f"{G}/{PAGE_ID}/photo_stories", tok, {"photo_id": ph["id"]})
+    elif a.cmd == "ig-carousel":
+        urls = [u.strip() for u in a.images.split(",") if u.strip()]
+        kids = []
+        for u in urls:
+            r = call("POST", f"{G}/{IG_ID}/media", tok, {"image_url": u, "is_carousel_item": "true"})
+            if "id" not in r:
+                out = {"child_error": r, "url": u}; print(json.dumps(out, indent=1)); return
+            kids.append(r["id"])
+        for k in kids:
+            wait_container(k, tok, tries=20, delay=3)
+        p = {"media_type": "CAROUSEL", "children": ",".join(kids), "caption": a.caption}
+        if a.collab:
+            p["collaborators"] = json.dumps([u.strip() for u in a.collab.split(",") if u.strip()])
+        r = call("POST", f"{G}/{IG_ID}/media", tok, p)
+        out = {"children": kids, "create": r}
+        if "id" in r:
+            out["status"] = wait_container(r["id"], tok)
+    elif a.cmd == "fb-photos":
+        urls = [u.strip() for u in a.images.split(",") if u.strip()]
+        ids = []
+        for u in urls:
+            r = call("POST", f"{G}/{PAGE_ID}/photos", tok, {"url": u, "published": "false", "temporary": "true" if a.at else "false"})
+            if "id" not in r:
+                out = {"photo_error": r, "url": u}; print(json.dumps(out, indent=1)); return
+            ids.append(r["id"])
+        p = {"message": a.caption}
+        for i, pid in enumerate(ids):
+            p[f"attached_media[{i}]"] = json.dumps({"media_fbid": pid})
+        if a.at:
+            ts = int(datetime.strptime(a.at, "%Y-%m-%dT%H:%M").replace(tzinfo=PKT).timestamp())
+            p.update({"published": "false", "scheduled_publish_time": str(ts)})
+        out = {"photos": ids, "post": call("POST", f"{G}/{PAGE_ID}/feed", tok, p)}
     else:
         sys.exit("unknown command")
     print(json.dumps(out, indent=1))
