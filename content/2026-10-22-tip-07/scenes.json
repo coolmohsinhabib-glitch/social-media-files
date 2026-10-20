@@ -1,0 +1,12 @@
+{
+  "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan", "phone": "+92 319 3498717", "series": "eBay TIP #07"},
+  "music": "rising", "music_seed": 207,
+  "intro_clip": {"path": "/tmp/claude-0/-home-claude/09ef8140-0880-5f03-aecd-de3c141f7425/scratchpad/t7/opener.mp4", "start": 0, "seconds": 3.2, "hook": "eBay account\nPakistan se?", "accent": ["Pakistan"], "keywords": "ebay account pakistan · ebay seller pakistan · ebay account kaise banaye"},
+  "scenes": [
+    {"type": "steps", "seconds": 9, "title": "3 baatein shuru se",
+     "lines": [["Details", "Sirf apni asli details"],
+               ["Payout", "Tareeqa pehle samjho"],
+               ["Limits", "Shuru mein kam listings"]], "highlight": 3},
+    {"type": "cta", "seconds": 4.5, "text": "Account ban gaya?\nComment karo!"}
+  ]
+}

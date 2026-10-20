@@ -1,0 +1,12 @@
+{
+  "brand": {"name": "Mohsin Habib", "title": "CFO & Co-Founder, IDB Pakistan", "phone": "+92 319 3498717", "series": "eBay TIP #08"},
+  "music": "classic",
+  "intro_clip": {"path": "/tmp/claude-0/-home-claude/09ef8140-0880-5f03-aecd-de3c141f7425/scratchpad/t8/flow.mp4", "start": 0.3, "seconds": 3.5, "hook": "eBay ke liye kitni\ninvestment chahiye?", "accent": ["investment"], "keywords": "ebay investment · ebay dropshipping pakistan · ebay start kaise karein"},
+  "scenes": [
+    {"type": "steps", "seconds": 9, "title": "Pehle hisaab samjho",
+     "lines": [["Product Cost", "Har order pehle aap ki jeb se"],
+               ["Payout", "Foran nahi aata, cash ready rakho"],
+               ["Profit", "eBay Payout − Product Cost"]], "highlight": 3},
+    {"type": "cta", "seconds": 4.5, "text": "Kitne budget se\nshuru karoge?"}
+  ]
+}
