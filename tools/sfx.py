@@ -104,13 +104,12 @@ def ding():
     y *= _env(len(y), 0.003, 1.1, 1.0)
     return _norm(y, -19)
 
-def riser(d=1.2):
+def riser(d=0.8):
+    # light "air" build-up: filtered noise only, gentle curve (no tonal sweep)
     t = _t(d)
-    n = _sweep_noise(d, 250, 6000, width=0.7)
-    f = 180 * (4.0 ** (t / d))
-    tone = np.sin(2 * np.pi * np.cumsum(f) / SR)
-    env = (t / d) ** 2.4
-    return _norm((0.75 * n + 0.25 * tone) * env, -17)
+    n = _sweep_noise(d, 600, 4500, width=0.6)
+    env = np.sin(np.pi / 2 * (t / d)) ** 3
+    return _norm(n * env, -22)
 
 def notify():
     a = _partials(0.16, 1318.5, [(1, 1, 1), (3.0, .2, 2)], 14)    # E6
@@ -138,7 +137,7 @@ def tick():
 FX = {"impact": impact, "whoosh": whoosh, "swish": swish, "pop": pop, "coin": coin, "ding": ding,
       "riser": riser, "notify": notify, "error": error, "chime": chime, "tick": tick}
 # where in each sound the "hit" is (seconds) – that point is placed exactly on the cue time
-HIT = {"whoosh": 0.35, "riser": 1.2, "swish": 0.12}
+HIT = {"whoosh": 0.35, "riser": 0.8, "swish": 0.12}
 _cache = {}
 
 def get(fx):
@@ -173,7 +172,9 @@ def cues_from_spec(spec, intro_seconds=0.0):
     for si, s in enumerate(scenes):
         dur = s["seconds"]
         if si > 0 or intro_seconds:
-            cues.append({"t": t0 + 0.0, "fx": "whoosh"})            # orange wipe / intro fade
+            last = si == len(scenes) - 1 and len(scenes) > 1
+            # orange wipe / intro fade; the cut into the last scene is a light swish (the riser already leads in)
+            cues.append({"t": t0 + 0.0, "fx": "swish" if last else "whoosh", "gain_db": -2 if last else 0})
         if s.get("sfx") is False:
             t0 += dur; continue
         if s["type"] == "hook":
@@ -208,7 +209,7 @@ def cues_from_spec(spec, intro_seconds=0.0):
 
 # ---------- balance against the music ----------
 # target level of each effect relative to the music's loudness at that moment (dB, RMS)
-TARGET = {"impact": -8, "whoosh": -5, "swish": -8, "pop": -7, "coin": -4, "ding": -4, "riser": -6,
+TARGET = {"impact": -8, "whoosh": -9, "swish": -8, "pop": -7, "coin": -4, "ding": -4, "riser": -15,
           "notify": -4, "error": -5, "chime": -4, "tick": -10}
 
 def _rms_db(x):
