@@ -17,6 +17,10 @@ Scene JSON:
 Music is generated here (original, royalty-free). Pick a style per video with "music": pop | drive | bright | chill | hype | desi (music.py) or suspense | inspiring | motivational | rising (cinematic.py) or classic (music_classic.py).
 APPROVED by Mohsin for his videos: "classic" (first video) and "rising". Use only these unless he approves more.
 Optional "intro_clip": {path, start, seconds, hook, accent, keywords} opens on real footage with the hook text from frame 1.
+Sound effects (sfx.py) are ON by default and follow the animation clock: impact on frame 1, whoosh on every wipe,
+swish + pop/coin per step card, ding on the highlighted card, riser into the last scene, notify on the phone box.
+Turn off with "sfx": false (or --no-sfx); per scene "sfx": false or "sfx": [{"at": 1.2, "fx": "error"}] for extra cues.
+The cue list used is saved next to the output as <out>.sfx.json.
 """
 import json, math, os, random, subprocess, sys, tempfile, wave
 from functools import lru_cache
@@ -296,12 +300,20 @@ def main(src, out, music=True):
         if mstyle == "classic": make_classic(length, wav)
         elif mstyle in CINEMATIC_MOODS: make_cinematic(length, wav, mstyle, cuts=cuts, seed=seed)
         else: make_music(length, wav, style=mstyle, cuts=cuts, seed=seed)
+        if spec.get("sfx", True) and "--no-sfx" not in sys.argv:
+            # sound effects synced to the animations (sfx.py): balanced to the music, music ducked under each effect
+            import sfx as SFX
+            music_arr = SFX._read_audio(wav)
+            cues = SFX.cues_from_spec(spec, intro_seconds=offs)
+            mixed, used = SFX.mix_with_music(music_arr, cues)
+            wav = os.path.join(tmpdir, "music_sfx.wav"); SFX._write_stereo(wav, mixed * 0.5)
+            json.dump(used, open(os.path.splitext(out)[0] + ".sfx.json", "w"), indent=1)
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-i", wav, "-c:v", "copy",
-                        "-af", "loudnorm=I=-14:TP=-1.5:LRA=9", "-ar", "44100",
+                        "-af", "loudnorm=I=-14:TP=-1:LRA=9,alimiter=limit=0.89:level=false", "-ar", "44100",
                         "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], check=True)
     else:
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", silent, "-c", "copy", "-movflags", "+faststart", out], check=True)
-    print(f"Rendered {out}: {length:.1f}s, music={'on' if music else 'off'}")
+    print(f"Rendered {out}: {length:.1f}s, music={'on' if music else 'off'}, sfx={'on' if music and spec.get('sfx', True) and '--no-sfx' not in sys.argv else 'off'}")
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2], music="--no-music" not in sys.argv)
